@@ -1,0 +1,36 @@
+{
+  "name": "magpie-agent-kiki",
+  "version": "0.1.0",
+  "description": "Kiki as a Magpie agent: Magpie's gateway and models in Kiki's pi models.json, and the model Kiki starts on in its .env",
+  "type": "module",
+  "files": [
+    "kiki.agent.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-plugin",
+    "magpie-agent",
+    "kiki",
+    "pi"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lkyxuan/magpie-agent-kiki.git"
+  },
+  "scripts": {
+    "test": "node --test kiki.test.mjs"
+  },
+  "magpie": {
+    "agent": "./kiki.agent.js",
+    "name": "Kiki 奇奇",
+    "icon": "https://raw.githubusercontent.com/lkyxuan/kiki/main/public/icon.svg",
+    "summary": {
+      "en": "Kiki, the local multi-agent app for Mac: pick any Magpie model for Kiki and its bots, with account failover.",
+      "zh": "Kiki（奇奇）本地多 Agent 助手：在 Magpie 里给 Kiki 和它的宝选任何模型，多账号自动轮换。"
+    }
+  },
+  "homepage": "https://github.com/lkyxuan/magpie-agent-kiki"
+}
