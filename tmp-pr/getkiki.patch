@@ -1,0 +1,250 @@
+From 5cf1a8c31e0d83b87fd26e45e547586208ca784d Mon Sep 17 00:00:00 2001
+From: lkyxuan <80798796+lkyxuan@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 05:07:43 +0000
+Subject: [PATCH] getkiki 0.1.0: Kiki (getkiki.ai) on the Agents page, its
+ model in ~/kiki-data/.env
+
+---
+ README.md                         |  1 +
+ packages/getkiki/README.md        | 37 ++++++++++++++++
+ packages/getkiki/getkiki.agent.js | 71 +++++++++++++++++++++++++++++++
+ packages/getkiki/getkiki.test.mjs | 58 +++++++++++++++++++++++++
+ packages/getkiki/package.json     | 12 ++++++
+ registry.json                     |  3 ++
+ 6 files changed, 182 insertions(+)
+ create mode 100644 packages/getkiki/README.md
+ create mode 100644 packages/getkiki/getkiki.agent.js
+ create mode 100644 packages/getkiki/getkiki.test.mjs
+ create mode 100644 packages/getkiki/package.json
+
+diff --git a/README.md b/README.md
+index a4ed233..a89d7a5 100644
+--- a/README.md
++++ b/README.md
+@@ -290,6 +290,7 @@ it off puts the config back.
+ | [junie](packages/junie) | [Junie CLI](https://junie.jetbrains.com/): an explicit `/v1/models` seed for its full picker and Magpie's selected model as the launch default; no LiteLLM |
+ | [kimi-desktop](packages/kimi-desktop) | Ordinary [Kimi desktop](https://www.kimi.com/) Work, through its authenticated local runtime; not Kimi Code CLI |
+ | [pi-desktop](packages/pi-desktop) | Pi-Desktop (the desktop app, not the Pi CLI): magpie keeps a Pi-Desktop plugin folder, `~/.config/magpie-pi-desktop/plugin`, that adds it as a model provider with its current models and their thinking levels; load it once in Pi-Desktop, choose the model there |
++| [getkiki](packages/getkiki) | [Kiki](https://getkiki.ai) (the Mac app, not X-T-E-R/kiki): Magpie's endpoint and model catalog in `~/kiki-data/engine/models.json`, and the model Kiki starts on (`MODEL` in `~/kiki-data/.env`) picked on the Agents page; quit and reopen Kiki to pick it up |
+ | [pig](packages/pig) | [PiG](https://github.com/MichaelKinsy/PiG): Magpie's endpoint and model catalog in `~/.pig/agent/models.json`, and the model PiG starts on (`defaultProvider`/`defaultModel` in `settings.json`) picked on the Agents page |
+ | [type4me](packages/type4me) | [Type4Me](https://github.com/joewongjc/type4me), macOS voice input: `~/Library/Application Support/Type4Me/magpie-agent.json`, for its LLM post-processing |
+ | [opencodereview](packages/opencodereview) | [Open Code Review](https://github.com/alibaba/open-code-review) (`ocr`): `~/.opencodereview/config.json` as a custom Anthropic provider, so `ocr review` / `ocr scan` run on magpie's models |
+diff --git a/packages/getkiki/README.md b/packages/getkiki/README.md
+new file mode 100644
+index 0000000..a6c9ee2
+--- /dev/null
++++ b/packages/getkiki/README.md
+@@ -0,0 +1,37 @@
++# agent-getkiki
++
++`@magpie-community/agent-getkiki` adds [Kiki](https://getkiki.ai), the Mac app where one chief of staff runs a team of AI agents, to magpie's Agents page. Pick a model on Kiki's row and Kiki (and every team member in it) goes through magpie's local gateway, with every provider, subscription and account failover magpie has.
++
++把 [Kiki](https://getkiki.ai)（Mac 上的 AI 首席秘书，带一支 AI 团队）接进 magpie 的 Agent 页：在 magpie 里给 Kiki 选一个模型，Kiki 和所有团队成员就都走 magpie 的本地网关。
++
++> Not the same product as [X-T-E-R/kiki](https://github.com/X-T-E-R/kiki) and its `magpie-agent-kiki` (an open-source workbench, config in `~/.kiki`). This is the getkiki.ai Mac app, data in `~/kiki-data`, so its id is `getkiki`.
++> 跟 X-T-E-R/kiki 的 `magpie-agent-kiki` 不是同一个产品：那个配置在 `~/.kiki`；这个是 getkiki.ai 的 Mac App，数据在 `~/kiki-data`，所以 id 叫 `getkiki`。
++
++## Install / 安装
++
++```sh
++magpie plugin add @magpie-community/agent-getkiki
++```
++
++Or open Plugins → Discover in magpie and search for Kiki. 或者在 magpie 里打开 插件 → 发现，搜 Kiki。
++
++## What it writes / 它改什么
++
++| File | What |
++| --- | --- |
++| `~/kiki-data/engine/models.json` | One provider, `magpie`: the gateway address, magpie's key for Kiki, every model magpie gives Kiki |
++| `~/kiki-data/.env` | `MODEL=magpie/<provider>/<model>`, the model Kiki starts on |
++
++Turn Kiki's row off in magpie, or pick Kiki's own model again, and both files go back as they were. Kiki's other providers, keys and settings are left alone.
++
++Kiki reads its model when it starts: quit Kiki (⌘Q) and open it again. After that magpie's models are also in Kiki's own model menu.
++
++Kiki 启动时读模型，换完要 ⌘Q 退出再打开。在 magpie 里关掉 Kiki 那一行，两个文件都恢复原样。
++
++A Kiki whose data folder is not `~/kiki-data` (`DATA_DIR` set) is not found yet.
++
++## Test
++
++```sh
++bun test getkiki.test.mjs
++```
+diff --git a/packages/getkiki/getkiki.agent.js b/packages/getkiki/getkiki.agent.js
+new file mode 100644
+index 0000000..a264de2
+--- /dev/null
++++ b/packages/getkiki/getkiki.agent.js
+@@ -0,0 +1,71 @@
++// Kiki as a Magpie agent.
++//
++// Kiki runs pi (1.5.0) on its own data folder, ~/kiki-data:
++//   - engine/models.json is pi's models file; connect writes a "magpie" provider
++//     there (Magpie's gateway + every model Magpie gives Kiki).
++//   - .env holds MODEL=<provider>/<model>, the model Kiki starts on (Kiki's own
++//     model menu writes the same line). startup points Magpie at it, with the
++//     "magpie/" prefix so Kiki asks pi for provider "magpie", model "<id>".
++// Turning the row off in Magpie puts both files back as they were.
++//
++// Kiki 用 pi（1.5.0），数据在 ~/kiki-data：engine/models.json 是 pi 的模型文件，
++// connect 往里写一个 magpie 供应商；.env 的 MODEL 是 Kiki 默认用的模型。
++// 在 Magpie 里关掉开关，两个文件都还原。
++
++export const agent = {
++  // "kiki" is taken in Magpie's market by another project (X-T-E-R/kiki), so this one is "getkiki".
++  id: "getkiki",
++  name: "Kiki (getkiki.ai)",
++  icon: "https://getkiki.ai/favicon.svg",
++  // Kiki is a Mac app with no command on PATH: its data folder says it is installed.
++  dir: "~/kiki-data",
++  config: "~/kiki-data/engine/models.json",
++  format: "json",
++  prefix: "magpie/",
++  startup: {
++    config: "~/kiki-data/.env",
++    format: "env",
++    model: "MODEL",
++  },
++  notice:
++    "Kiki reads its model when it starts: quit Kiki (⌘Q) and open it again. Magpie's models are also in Kiki's own model menu. " +
++    "Kiki 启动时读模型：⌘Q 退出再打开就用上了。Kiki 自己的模型菜单里也能直接选 Magpie 的模型。",
++}
++
++const thinkingLevels = ["off", "minimal", "low", "medium", "high", "xhigh", "max"]
++
++function modelEntry(model) {
++  const efforts = model.efforts || []
++  const entry = {
++    id: model.id,
++    name: model.name || model.id,
++    input: model.images ? ["text", "image"] : ["text"],
++    reasoning: efforts.length > 0,
++  }
++  // Unknown limits are left to pi's defaults; zero is invalid in its schema.
++  if (model.context > 0) entry.contextWindow = model.context
++  if (model.output > 0) entry.maxTokens = model.context > 0 ? Math.min(model.output, model.context) : model.output
++  if (efforts.length > 0) {
++    entry.thinkingLevelMap = {}
++    for (const level of thinkingLevels) {
++      const effort = level === "off" ? "none" : level
++      entry.thinkingLevelMap[level] = efforts.includes(effort) ? effort : null
++    }
++  }
++  return entry
++}
++
++export function connect({ gateway, models }) {
++  // The provider is written and restored as one unit, so turning the row off
++  // leaves no empty provider behind; Kiki's other providers are not touched.
++  return {
++    "providers.magpie": {
++      name: "Magpie",
++      baseUrl: gateway.v1,
++      apiKey: gateway.key,
++      // Magpie's gateway translates Chat Completions to whatever each model speaks.
++      api: "openai-completions",
++      models: (models || []).map(modelEntry),
++    },
++  }
++}
+diff --git a/packages/getkiki/getkiki.test.mjs b/packages/getkiki/getkiki.test.mjs
+new file mode 100644
+index 0000000..61b8eca
+--- /dev/null
++++ b/packages/getkiki/getkiki.test.mjs
+@@ -0,0 +1,58 @@
++import { test } from "node:test"
++import assert from "node:assert/strict"
++import { readFileSync } from "node:fs"
++import { agent, connect } from "./getkiki.agent.js"
++
++const gateway = { url: "http://127.0.0.1:3425", v1: "http://127.0.0.1:3425/v1", key: "magpie-getkiki" }
++const model = { id: "deepseek/deepseek-v4-pro", name: "DeepSeek V4 Pro", context: 131072, output: 32768, images: true, efforts: ["none", "low", "high"] }
++
++test("points Magpie at Kiki's pi models.json and the MODEL line in its .env", () => {
++  assert.equal(agent.id, "getkiki")
++  assert.equal(agent.config, "~/kiki-data/engine/models.json")
++  assert.equal(agent.format, "json")
++  // the model lives in .env, so agent.model stays out (Magpie refuses both)
++  assert.equal(agent.model, undefined)
++  assert.deepEqual(agent.startup, { config: "~/kiki-data/.env", format: "env", model: "MODEL" })
++  assert.equal(agent.library, undefined)
++})
++
++test("the startup model names the provider connect writes, as Kiki splits it", () => {
++  const out = connect({ gateway, models: [model] })
++  assert.deepEqual(Object.keys(out), ["providers.magpie"])
++  // Magpie writes MODEL=<prefix><provider>/<model>; Kiki takes the part before the first / as pi's provider
++  const written = agent.prefix + model.id
++  const [provider, ...rest] = written.split("/")
++  assert.equal(`providers.${provider}`, "providers.magpie")
++  assert.ok(out["providers.magpie"].models.some((m) => m.id === rest.join("/")))
++})
++
++test("writes one whole provider with the gateway and this agent's key", () => {
++  const p = connect({ gateway, models: [model] })["providers.magpie"]
++  assert.equal(p.baseUrl, gateway.v1)
++  assert.equal(p.apiKey, "magpie-getkiki")
++  assert.equal(p.api, "openai-completions")
++  assert.deepEqual(p.models, [{
++    id: model.id, name: "DeepSeek V4 Pro", input: ["text", "image"], reasoning: true,
++    contextWindow: 131072, maxTokens: 32768,
++    thinkingLevelMap: { off: "none", minimal: null, low: "low", medium: null, high: "high", xhigh: null, max: null },
++  }])
++})
++
++test("leaves unknown limits to pi and handles text-only models", () => {
++  for (const limits of [{}, { context: 0, output: 0 }]) {
++    assert.deepEqual(connect({ gateway, models: [{ id: "x/plain", ...limits }] })["providers.magpie"].models, [
++      { id: "x/plain", name: "x/plain", input: ["text"], reasoning: false },
++    ])
++  }
++  assert.equal(connect({ gateway, models: [{ id: "x/y", context: 1000, output: 4000 }] })["providers.magpie"].models[0].maxTokens, 1000)
++  assert.deepEqual(connect({ gateway })["providers.magpie"].models, [])
++})
++
++test("package.json declares the agent, its icon and no install scripts", () => {
++  const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"))
++  assert.equal(pkg.magpie.agent, "./getkiki.agent.js")
++  assert.equal(pkg.magpie.icon, agent.icon)
++  assert.equal(pkg.main, undefined)
++  assert.equal(pkg.dependencies, undefined)
++  assert.equal(pkg.scripts.postinstall, undefined)
++})
+diff --git a/packages/getkiki/package.json b/packages/getkiki/package.json
+new file mode 100644
+index 0000000..93c7b5a
+--- /dev/null
++++ b/packages/getkiki/package.json
+@@ -0,0 +1,12 @@
++{
++  "name": "@magpie-community/agent-getkiki",
++  "version": "0.1.0",
++  "description": "Kiki (getkiki.ai) as a magpie agent: magpie's gateway and models in Kiki's pi models.json, and the model Kiki starts on in its .env",
++  "type": "module",
++  "files": ["getkiki.agent.js", "README.md"],
++  "keywords": ["magpie", "magpie-agent", "kiki", "getkiki", "pi", "llm-gateway"],
++  "license": "MIT",
++  "repository": { "type": "git", "url": "git+https://github.com/magpie-community/plugins.git", "directory": "packages/getkiki" },
++  "scripts": { "test": "bun test getkiki.test.mjs" },
++  "magpie": { "agent": "./getkiki.agent.js", "icon": "https://getkiki.ai/favicon.svg" }
++}
+diff --git a/registry.json b/registry.json
+index 403dc1e..8220025 100644
+--- a/registry.json
++++ b/registry.json
+@@ -135,6 +135,9 @@
+       "summary": { "en": "Open Code Review (Alibaba's ocr CLI) on magpie's Agents page: pick one of magpie's models and ocr review / ocr scan use it, read from the config on the next run.", "zh": "把 Open Code Review（阿里巴巴的 ocr CLI）加到 magpie 的 Agent 页：给它选 magpie 的模型，下一次 ocr review / ocr scan 即从配置中读到并生效。" } },
+     { "package": "@magpie-community/agent-pi-desktop", "name": "Pi-Desktop", "kind": "agent", "community": true,
+       "summary": { "en": "Pi-Desktop on magpie's Agents page: magpie keeps a Pi-Desktop plugin folder that adds it as a model provider, with its current models and their thinking levels. Pi-Desktop picks up model changes when it starts.", "zh": "把 Pi-Desktop 加到 magpie 的 Agent 页：magpie 维护一个 Pi-Desktop 插件文件夹，把自己加为模型服务，带上当前模型和推理等级；模型有变化时，Pi-Desktop 重启后生效。" } },
++    { "package": "@magpie-community/agent-getkiki", "name": "Kiki (getkiki.ai)", "kind": "agent", "community": true,
++      "icon": "https://getkiki.ai/favicon.svg",
++      "summary": { "en": "Kiki (getkiki.ai), the Mac app where one chief of staff runs a team of AI agents, on magpie's Agents page: pick a magpie model for Kiki and every team member. Kiki picks it up when it starts; switch it off to put Kiki's files back. Not X-T-E-R/kiki.", "zh": "把 Kiki（getkiki.ai，Mac 上的 AI 首席秘书，带一支 AI 团队）加到 magpie 的 Agent 页：给 Kiki 和所有团队成员选 magpie 的模型，Kiki 重启后生效；关掉即恢复原来的设置。与 X-T-E-R/kiki 不是同一个产品。" } },
+     { "package": "@magpie-community/agent-junie", "name": "Junie CLI", "kind": "agent", "community": true,
+       "icon": "https://junie.jetbrains.com/favicons/favicon.svg",
+       "summary": { "en": "An explicit seed copies Magpie's full model catalog into Junie CLI and uses Magpie's selected model as the launch default, without LiteLLM. Native ECO is unavailable for custom profiles in Junie 3893.6.", "zh": "手动 seed 向 Junie CLI 同步全部模型，并将 Magpie 所选模型设为启动默认模型，无需 LiteLLM。Junie 3893.6 的自定义 profile 不支持原生 ECO。" } },
+-- 
+2.43.0
+
