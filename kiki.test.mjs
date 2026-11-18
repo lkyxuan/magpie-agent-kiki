@@ -3,11 +3,11 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { agent, connect } from "./kiki.agent.js"
 
-const gateway = { url: "http://127.0.0.1:3425", v1: "http://127.0.0.1:3425/v1", key: "magpie-kiki" }
+const gateway = { url: "http://127.0.0.1:3425", v1: "http://127.0.0.1:3425/v1", key: "magpie-getkiki" }
 const model = { id: "deepseek/deepseek-v4-pro", name: "DeepSeek V4 Pro", context: 131072, output: 32768, images: true, efforts: ["none", "low", "high"] }
 
 test("points Magpie at Kiki's pi models.json and the MODEL line in its .env", () => {
-  assert.equal(agent.id, "kiki")
+  assert.equal(agent.id, "getkiki")
   assert.equal(agent.config, "~/kiki-data/engine/models.json")
   assert.equal(agent.format, "json")
   // the model lives in .env, so agent.model stays out (Magpie refuses both)
@@ -29,7 +29,7 @@ test("the startup model names the provider connect writes, as Kiki splits it", (
 test("writes one whole provider with the gateway and this agent's key", () => {
   const p = connect({ gateway, models: [model] })["providers.magpie"]
   assert.equal(p.baseUrl, gateway.v1)
-  assert.equal(p.apiKey, "magpie-kiki")
+  assert.equal(p.apiKey, "magpie-getkiki")
   assert.equal(p.api, "openai-completions")
   assert.deepEqual(p.models, [{
     id: model.id, name: "DeepSeek V4 Pro", input: ["text", "image"], reasoning: true,

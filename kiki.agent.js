@@ -1,6 +1,6 @@
 // Kiki as a Magpie agent.
 //
-// Kiki runs pi (1.4.0) on its own data folder, ~/kiki-data:
+// Kiki runs pi (1.5.0) on its own data folder, ~/kiki-data:
 //   - engine/models.json is pi's models file; connect writes a "magpie" provider
 //     there (Magpie's gateway + every model Magpie gives Kiki).
 //   - .env holds MODEL=<provider>/<model>, the model Kiki starts on (Kiki's own
@@ -8,14 +8,15 @@
 //     "magpie/" prefix so Kiki asks pi for provider "magpie", model "<id>".
 // Turning the row off in Magpie puts both files back as they were.
 //
-// Kiki 用 pi（1.4.0），数据在 ~/kiki-data：engine/models.json 是 pi 的模型文件，
+// Kiki 用 pi（1.5.0），数据在 ~/kiki-data：engine/models.json 是 pi 的模型文件，
 // connect 往里写一个 magpie 供应商；.env 的 MODEL 是 Kiki 默认用的模型。
 // 在 Magpie 里关掉开关，两个文件都还原。
 
 export const agent = {
-  id: "kiki",
-  name: "Kiki",
-  icon: "https://raw.githubusercontent.com/lkyxuan/kiki/main/public/icon.svg",
+  // "kiki" is taken in Magpie's market by another project (X-T-E-R/kiki), so this one is "getkiki".
+  id: "getkiki",
+  name: "Kiki (getkiki.ai)",
+  icon: "https://getkiki.ai/favicon.svg",
   // Kiki is a Mac app with no command on PATH: its data folder says it is installed.
   dir: "~/kiki-data",
   config: "~/kiki-data/engine/models.json",

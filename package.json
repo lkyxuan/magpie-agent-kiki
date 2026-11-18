@@ -1,7 +1,7 @@
 {
-  "name": "magpie-agent-kiki",
-  "version": "0.1.0",
-  "description": "Kiki as a Magpie agent: Magpie's gateway and models in Kiki's pi models.json, and the model Kiki starts on in its .env",
+  "name": "magpie-agent-getkiki",
+  "version": "0.2.0",
+  "description": "Kiki (getkiki.ai) as a Magpie agent: Magpie's gateway and models in Kiki's pi models.json, and the model Kiki starts on in its .env",
   "type": "module",
   "files": [
     "kiki.agent.js",
@@ -13,6 +13,7 @@
     "magpie-plugin",
     "magpie-agent",
     "kiki",
+    "getkiki",
     "pi"
   ],
   "license": "MIT",
@@ -25,11 +26,11 @@
   },
   "magpie": {
     "agent": "./kiki.agent.js",
-    "name": "Kiki 奇奇",
-    "icon": "https://raw.githubusercontent.com/lkyxuan/kiki/main/public/icon.svg",
+    "name": "Kiki (getkiki.ai)",
+    "icon": "https://getkiki.ai/favicon.svg",
     "summary": {
-      "en": "Kiki, the local multi-agent app for Mac: pick any Magpie model for Kiki and its bots, with account failover.",
-      "zh": "Kiki（奇奇）本地多 Agent 助手：在 Magpie 里给 Kiki 和它的宝选任何模型，多账号自动轮换。"
+      "en": "Kiki (getkiki.ai), the Mac app where one chief of staff runs a team of AI agents: pick any Magpie model for Kiki and its team members, with account failover. Switch it off to put Kiki's files back.",
+      "zh": "Kiki（getkiki.ai）Mac 上的 AI 首席秘书，带一支 AI 团队：在 Magpie 里给 Kiki 和团队成员选任何模型，多账号自动轮换；关掉即恢复 Kiki 原来的设置。"
     }
   },
   "homepage": "https://github.com/lkyxuan/magpie-agent-kiki"
